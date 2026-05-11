@@ -139,7 +139,7 @@ substeps:
     field_name: Co-Borrower Marital Status
     category: borrower_info
     purpose: Completeness check if coborrower present
-  # ── Credit scores ──────────────────────────────────────────────────
+  # ── Credit scores — Borrower ────────────────────────────────────────
   - key: credit_score
     field_id: '1168'
     field_name: Credit Score (Middle)
@@ -147,19 +147,46 @@ substeps:
     purpose: Confirm middle credit score is populated
   - key: experian_score
     field_id: '67'
-    field_name: Experian Credit Score
+    field_name: Borrower Experian/FICO Score
     category: credit
-    purpose: Individual bureau score for cross-check
+    purpose: Flag if blank
   - key: transunion_score
     field_id: '1450'
-    field_name: TransUnion Credit Score
+    field_name: Borrower TransUnion/Empirica Score
     category: credit
-    purpose: Individual bureau score for cross-check
+    purpose: Flag if blank
   - key: equifax_score
     field_id: '1414'
-    field_name: Equifax Credit Score
+    field_name: Borrower Equifax/Beacon Score
     category: credit
-    purpose: Individual bureau score for cross-check
+    purpose: Flag if blank
+  # ── Credit scores — Co-Borrower ─────────────────────────────────────
+  - key: coborrower_experian_score
+    field_id: '60'
+    field_name: Co-Borrower Experian/FICO Score
+    category: credit
+    purpose: Flag if blank when co-borrower is present
+  - key: coborrower_transunion_score
+    field_id: '1452'
+    field_name: Co-Borrower TransUnion/Empirica Score
+    category: credit
+    purpose: Flag if blank when co-borrower is present
+  - key: coborrower_equifax_score
+    field_id: '1415'
+    field_name: Co-Borrower Equifax/Beacon Score
+    category: credit
+    purpose: Flag if blank when co-borrower is present
+  # ── Credit decision / reference ─────────────────────────────────────
+  - key: credit_score_decision
+    field_id: VASUMM.X23
+    field_name: Credit Score for Decision Making
+    category: credit
+    purpose: Flag if blank — used by both borrower and co-borrower
+  - key: credit_reference_number
+    field_id: '300'
+    field_name: Credit Reference Number
+    category: credit
+    purpose: Flag if blank
   # ── Subject property ───────────────────────────────────────────────
   - key: property_address
     field_id: '11'

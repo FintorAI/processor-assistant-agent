@@ -91,6 +91,14 @@ def review_borrower_summary(
     coborrower_accept_sms    = _los(state, "coborrower_accept_sms")  # field 4935
 
     credit_score             = _los(state, "credit_score")
+    experian_score           = _los(state, "experian_score")
+    transunion_score         = _los(state, "transunion_score")
+    equifax_score            = _los(state, "equifax_score")
+    coborrower_experian_score  = _los(state, "coborrower_experian_score")
+    coborrower_transunion_score = _los(state, "coborrower_transunion_score")
+    coborrower_equifax_score   = _los(state, "coborrower_equifax_score")
+    credit_score_decision    = _los(state, "credit_score_decision")
+    credit_reference_number  = _los(state, "credit_reference_number")
     loan_amount              = _los(state, "loan_amount")
     appraised_value          = _los(state, "appraised_value")
     loan_purpose             = _los(state, "loan_purpose")
@@ -195,11 +203,44 @@ def review_borrower_summary(
               "Co-borrower email address is blank.",
               "Obtain and enter co-borrower email address.")
 
-    # ── Rule: Credit Score ────────────────────────────────────────────────
+    # ── Rule: Credit Scores ───────────────────────────────────────────────
+    borr_credit_fields = {
+        "Borrower Experian/FICO (67)":           experian_score,
+        "Borrower TransUnion/Empirica (1450)":   transunion_score,
+        "Borrower Equifax/Beacon (1414)":        equifax_score,
+    }
+    for label, val in borr_credit_fields.items():
+        if not val:
+            _flag(flags, "2.1", "Credit Score Missing", "warning",
+                  f"{label} is blank.",
+                  "Ensure credit has been pulled and all bureau scores are populated.")
+
     if not credit_score:
         _flag(flags, "2.1", "Credit Score Missing", "critical",
               "Middle credit score (field 1168) is blank.",
               "Ensure credit has been pulled and scores are populated in Encompass.")
+
+    if not credit_score_decision:
+        _flag(flags, "2.1", "Credit Score Missing", "warning",
+              "Credit Score for Decision Making (VASUMM.X23) is blank.",
+              "Populate the decision credit score field.")
+
+    if not credit_reference_number:
+        _flag(flags, "2.1", "Credit Reference Number Missing", "warning",
+              "Credit Reference Number (field 300) is blank.",
+              "Enter the credit reference number from the credit report.")
+
+    if has_coborrower:
+        coborr_credit_fields = {
+            "Co-Borrower Experian/FICO (60)":          coborrower_experian_score,
+            "Co-Borrower TransUnion/Empirica (1452)":  coborrower_transunion_score,
+            "Co-Borrower Equifax/Beacon (1415)":       coborrower_equifax_score,
+        }
+        for label, val in coborr_credit_fields.items():
+            if not val:
+                _flag(flags, "2.1", "Credit Score Missing", "warning",
+                      f"{label} is blank.",
+                      "Ensure co-borrower credit scores are populated.")
 
     # ── Rule: Loan Amount > 0 ─────────────────────────────────────────────
     try:
@@ -251,6 +292,8 @@ def review_borrower_summary(
         "has_coborrower": has_coborrower,
         "flags_count": len(flags),
         "credit_score": credit_score,
+        "credit_score_decision": credit_score_decision,
+        "credit_reference_number": credit_reference_number,
         "loan_amount": loan_amount,
         "ami_eligibility": ami_eligibility,
         "message": "Review Borrower Summary - Origination completed" + (f" with {len(flags)} flags" if flags else ""),

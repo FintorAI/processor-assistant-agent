@@ -171,7 +171,16 @@
     {
       "key": "equifax_score",
       "field_id": "1414",
-      "field_name": "Equifax Credit Score",
+      "field_name": "Borrower Equifax/Beacon Score",
+      "category": "credit",
+      "used_by_steps": [
+        "STEP_02"
+      ]
+    },
+    {
+      "key": "coborrower_equifax_score",
+      "field_id": "1415",
+      "field_name": "Co-Borrower Equifax/Beacon Score",
       "category": "credit",
       "used_by_steps": [
         "STEP_02"
@@ -180,7 +189,16 @@
     {
       "key": "transunion_score",
       "field_id": "1450",
-      "field_name": "TransUnion Credit Score",
+      "field_name": "Borrower TransUnion/Empirica Score",
+      "category": "credit",
+      "used_by_steps": [
+        "STEP_02"
+      ]
+    },
+    {
+      "key": "coborrower_transunion_score",
+      "field_id": "1452",
+      "field_name": "Co-Borrower TransUnion/Empirica Score",
       "category": "credit",
       "used_by_steps": [
         "STEP_02"
@@ -321,6 +339,15 @@
       "category": "loan_info",
       "used_by_steps": [
         "STEP_09"
+      ]
+    },
+    {
+      "key": "credit_reference_number",
+      "field_id": "300",
+      "field_name": "Credit Reference Number",
+      "category": "credit",
+      "used_by_steps": [
+        "STEP_02"
       ]
     },
     {
@@ -499,6 +526,15 @@
       ]
     },
     {
+      "key": "coborrower_experian_score",
+      "field_id": "60",
+      "field_name": "Co-Borrower Experian/FICO Score",
+      "category": "credit",
+      "used_by_steps": [
+        "STEP_02"
+      ]
+    },
+    {
       "key": "borrower_ssn",
       "field_id": "65",
       "field_name": "Borrower SSN",
@@ -520,7 +556,7 @@
     {
       "key": "experian_score",
       "field_id": "67",
-      "field_name": "Experian Credit Score",
+      "field_name": "Borrower Experian/FICO Score",
       "category": "credit",
       "used_by_steps": [
         "STEP_02"
@@ -777,6 +813,15 @@
       "category": "closing",
       "used_by_steps": [
         "STEP_15"
+      ]
+    },
+    {
+      "key": "credit_score_decision",
+      "field_id": "VASUMM.X23",
+      "field_name": "Credit Score for Decision Making",
+      "category": "credit",
+      "used_by_steps": [
+        "STEP_02"
       ]
     }
   ],
@@ -1378,7 +1423,7 @@
     }
   ],
   "stats": {
-    "total_los_fields": 85,
+    "total_los_fields": 90,
     "total_doc_fields": 66,
     "total_document_types": 23,
     "total_steps": 11,
