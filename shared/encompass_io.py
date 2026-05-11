@@ -67,9 +67,6 @@ def _record_writes(updates: Dict[str, Any], state: Optional[dict], dry_run: bool
         })
     _sync_state_cache(updates, state)
 
-# encompass_client is at the project root (on Python path via langgraph dev / deployment)
-# In v4-5-6 this was a relative import (from ..encompass_client) because shared/ was nested
-# under tools/. In the new Factory layout, shared/ is top-level so we use absolute import.
 try:
     from encompass_client import get_encompass_client
 except ImportError:
