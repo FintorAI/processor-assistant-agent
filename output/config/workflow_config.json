@@ -107,7 +107,7 @@
           ]
         },
         "2": {
-          "name": "Fetch LOS Fields (83 fields)",
+          "name": "Fetch LOS Fields (85 fields)",
           "tools": [
             "fetch_los_fields"
           ]

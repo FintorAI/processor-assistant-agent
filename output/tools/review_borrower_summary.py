@@ -24,14 +24,42 @@ from ._helpers import _los, _doc, _profile, _write_fields
 logger = logging.getLogger(__name__)
 
 
+def _flag(flags, substep, title, severity, details, suggestion):
+    flags.append({
+        "substep": substep,
+        "title": title,
+        "severity": severity,
+        "details": details,
+        "suggestion": suggestion,
+        "resolved": False,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+
+
+def _is_checked(val) -> bool:
+    """Return True if an Encompass checkbox field is checked (Y / true / True / 1)."""
+    if val is None:
+        return False
+    return str(val).strip().lower() in ("y", "yes", "true", "1")
+
+
 @tool
 def review_borrower_summary(
     tool_call_id: Annotated[str, InjectedToolCallId],
     state: Annotated[dict, InjectedState],) -> Command:
-    """Walk through the Borrower Summary – Origination screen. Check every field for completeness (cell phone = home phone if empty). Verify ID is not expired. Cross-check subject property address against listing (Google). Confirm credit score, loan amount, and AMI / Affordable Loan Eligibility fields.
+    """Walk through the Borrower Summary – Origination screen. Check every field for completeness (cell phone = home phone if empty). Auto-check accept text/SMS if unchecked. Verify credit score, loan amount, email, marital status populated. Cross-check property address against Purchase Contract.
 
-
-    Call this tool during STEP_02 (Borrower Summary - Origination) as substep 2.1.    Reads LOS: borrower_first_name, borrower_last_name, borrower_cell_phone, borrower_home_phone, borrower_dob, property_address, property_city, property_state, property_zip, credit_score, loan_amount, appraised_value, loan_purpose, ami_eligibility    Reads Docs: Driver's License, Purchase Agreement    Flags: Required Field Empty (warning), Borrower ID Expired (warning), Property Address Mismatch (warning), Loan Amount Missing (critical)    Writes: field corrections for 1480    """
+    Call this tool during STEP_02 (Borrower Summary - Origination) as substep 2.1.
+    Reads LOS: borrower_first_name, borrower_last_name, borrower_cell_phone, borrower_home_phone,
+    borrower_accept_sms, borrower_dob, borrower_email, borrower_marital_status,
+    coborrower_first_name, coborrower_last_name, coborrower_cell_phone, coborrower_accept_sms,
+    coborrower_email, coborrower_marital_status, property_address, property_city, property_state,
+    property_zip, credit_score, loan_amount, appraised_value, loan_purpose, ami_eligibility
+    Reads Docs: Driver's License, Purchase Agreement
+    Flags: Required Field Empty, Borrower ID Expired, Property Address Mismatch, Loan Amount Missing,
+    Credit Score Missing, Email Missing
+    Writes: 1490 (borr cell ← home phone), 4920 (borr SMS), 4935 (coborr SMS)
+    """
     loan_id = state.get("loan_id")
     if not loan_id:
         return Command(update={"messages": [ToolMessage(
@@ -42,106 +70,189 @@ def review_borrower_summary(
     logger.info(f"[REVIEW_BORROWER_SUMMARY] Starting for loan {str(loan_id)[:8]}...")
 
     flags = []
-    # ── Read LOS Fields ──    borrower_first_name = _los(state, "borrower_first_name")  # Field 4000: Borrower First Name    borrower_last_name = _los(state, "borrower_last_name")  # Field 4002: Borrower Last Name    borrower_cell_phone = _los(state, "borrower_cell_phone")  # Field 1480: Borrower Cell Phone    borrower_home_phone = _los(state, "borrower_home_phone")  # Field 66: Borrower Home Phone    borrower_dob = _los(state, "borrower_dob")  # Field 1402: Borrower Date of Birth    property_address = _los(state, "property_address")  # Field 11: Property Street Address    property_city = _los(state, "property_city")  # Field 12: Property City    property_state = _los(state, "property_state")  # Field 14: Property State    property_zip = _los(state, "property_zip")  # Field 15: Property ZIP    credit_score = _los(state, "credit_score")  # Field 1168: Credit Score (Middle)    loan_amount = _los(state, "loan_amount")  # Field 1109: Loan Amount    appraised_value = _los(state, "appraised_value")  # Field 356: Appraised / Estimated Value    loan_purpose = _los(state, "loan_purpose")  # Field 19: Loan Purpose    ami_eligibility = _los(state, "ami_eligibility")  # Field CX.AMI.ELIGIBILITY: AMI / Affordable Loan Eligibility    # ── Read Doc Fields ──    # From: Driver's License    dl_expiry_doc = _doc(state, "dl_expiry")    dl_name_doc = _doc(state, "dl_name")    # From: Purchase Agreement    purchase_price_doc = _doc(state, "purchase_price")    purchase_property_address_doc = _doc(state, "purchase_property_address")    # ── Rule: All Required Fields Populated ──
-    # Every mandatory field on the Borrower Summary screen must be populated. If cell phone is empty, copy value from home phone.
-    # 
-    # Type: existence_check    # TODO: Implement this rule
-    pass
 
-    # ── Rule: ID Not Expired ──
-    # Government ID expiration must be >= today.
-    # Type: value_check    # Check: dl_expiry >= today    # TODO: Implement this rule
-    pass
+    # ── Read LOS Fields (pre-fetched by fetch_los_fields via state) ──────
+    borrower_first_name      = _los(state, "borrower_first_name")
+    borrower_last_name       = _los(state, "borrower_last_name")
+    borrower_ssn             = _los(state, "borrower_ssn")
+    borrower_dob             = _los(state, "borrower_dob")
+    borrower_home_phone      = _los(state, "borrower_home_phone")
+    borrower_cell_phone      = _los(state, "borrower_cell_phone")   # field 1490
+    borrower_email           = _los(state, "borrower_email")
+    borrower_marital_status  = _los(state, "borrower_marital_status")
+    borrower_accept_sms      = _los(state, "borrower_accept_sms")   # field 4920
 
-    # ── Rule: Property Address Consistent ──
-    # Property address in Encompass should match the listing and Purchase Contract. Flag any mismatch.
-    # 
-    # Type: field_comparison    # TODO: Implement this rule
-    pass
+    coborrower_first_name    = _los(state, "coborrower_first_name")
+    coborrower_last_name     = _los(state, "coborrower_last_name")
+    coborrower_cell_phone    = _los(state, "coborrower_cell_phone")  # field 1480
+    coborrower_home_phone    = _los(state, "coborrower_home_phone")
+    coborrower_email         = _los(state, "coborrower_email")
+    coborrower_marital_status = _los(state, "coborrower_marital_status")
+    coborrower_accept_sms    = _los(state, "coborrower_accept_sms")  # field 4935
 
-    # ── Rule: Loan Amount Positive ──
-    # Loan amount must be greater than zero.
-    # Type: value_check    # Check: loan_amount > 0    # TODO: Implement this rule
-    pass
+    credit_score             = _los(state, "credit_score")
+    loan_amount              = _los(state, "loan_amount")
+    appraised_value          = _los(state, "appraised_value")
+    loan_purpose             = _los(state, "loan_purpose")
+    property_address         = _los(state, "property_address")
+    property_city            = _los(state, "property_city")
+    property_state           = _los(state, "property_state")
+    property_zip             = _los(state, "property_zip")
+    ami_eligibility          = _los(state, "ami_eligibility")
 
-    # ── Flag: Required Field Empty ──
-    # Condition: A mandatory Borrower Summary field is blank
-    # Severity: warning
-    # TODO: Add condition check
-    # if <condition>:
-    #     flags.append({
-    #         "substep": "2.1",
-    #         "title": "Required Field Empty",
-    #         "severity": "warning",
-    #         "details": "",
-    #         "suggestion": "Populate the missing field before proceeding",
-    #         "resolved": False,
-    #         "timestamp": datetime.now(timezone.utc).isoformat(),
-    #     })
+    has_coborrower = bool(coborrower_first_name and coborrower_last_name)
 
-    # ── Flag: Borrower ID Expired ──
-    # Condition: Government ID expiration date is before today
-    # Severity: warning
-    # TODO: Add condition check
-    # if <condition>:
-    #     flags.append({
-    #         "substep": "2.1",
-    #         "title": "Borrower ID Expired",
-    #         "severity": "warning",
-    #         "details": "",
-    #         "suggestion": "Request a valid government-issued ID from the borrower",
-    #         "resolved": False,
-    #         "timestamp": datetime.now(timezone.utc).isoformat(),
-    #     })
+    # ── Read Doc Fields ───────────────────────────────────────────────────
+    dl_expiry_doc            = _doc(state, "dl_expiry")
+    dl_name_doc              = _doc(state, "dl_name")
+    purchase_price_doc       = _doc(state, "purchase_price")
+    purchase_property_address_doc = _doc(state, "purchase_property_address")
 
-    # ── Flag: Property Address Mismatch ──
-    # Condition: Encompass address doesn't match listing or Purchase Contract
-    # Severity: warning
-    # TODO: Add condition check
-    # if <condition>:
-    #     flags.append({
-    #         "substep": "2.1",
-    #         "title": "Property Address Mismatch",
-    #         "severity": "warning",
-    #         "details": "",
-    #         "suggestion": "Correct the property address and flag for Lock Desk if needed",
-    #         "resolved": False,
-    #         "timestamp": datetime.now(timezone.utc).isoformat(),
-    #     })
+    # ── Rule: Required Fields Populated ───────────────────────────────────
+    required_fields = {
+        "Borrower First Name":    borrower_first_name,
+        "Borrower Last Name":     borrower_last_name,
+        "Borrower SSN":           borrower_ssn,
+        "Borrower Date of Birth": borrower_dob,
+        "Borrower Marital Status": borrower_marital_status,
+    }
+    for label, val in required_fields.items():
+        if not val:
+            _flag(flags, "2.1", "Required Field Empty", "warning",
+                  f"{label} is blank on the Borrower Summary screen.",
+                  "Populate the missing field before proceeding.")
 
-    # ── Flag: Loan Amount Missing ──
-    # Condition: Loan amount is zero or blank
-    # Severity: critical
-    # TODO: Add condition check
-    # if <condition>:
-    #     flags.append({
-    #         "substep": "2.1",
-    #         "title": "Loan Amount Missing",
-    #         "severity": "critical",
-    #         "details": "",
-    #         "suggestion": "Enter the correct loan amount before proceeding",
-    #         "resolved": False,
-    #         "timestamp": datetime.now(timezone.utc).isoformat(),
-    #     })
+    if has_coborrower:
+        coborr_required = {
+            "Co-Borrower Marital Status": coborrower_marital_status,
+        }
+        for label, val in coborr_required.items():
+            if not val:
+                _flag(flags, "2.1", "Required Field Empty", "warning",
+                      f"{label} is blank.",
+                      "Populate the missing field before proceeding.")
 
-    # ── Field Updates ──
-    borrower_cell_phone = _los(state, "borrower_cell_phone")
-    borrower_home_phone = _los(state, "borrower_home_phone")
+    # ── Rule: Phone — cell phone fallback from home phone ────────────────
+    # Borrower: write home phone → cell (1490) if cell is empty
     _write_fields(
         loan_id,
-        {"1480": borrower_home_phone if not borrower_cell_phone else None},
+        {"1490": borrower_home_phone if not borrower_cell_phone else None},
         substep="2.1",
         flags=flags,
         state=state,
-        labels={"1480": "Borrower Cell Phone (copied from Home Phone)"},
+        labels={"1490": "Borrower Cell Phone (copied from Home Phone)"},
     )
 
-    # ── Build result ──
+    # Co-borrower: write home phone → cell (1480) if cell is empty and coborrower present
+    if has_coborrower:
+        _write_fields(
+            loan_id,
+            {"1480": coborrower_home_phone if not coborrower_cell_phone else None},
+            substep="2.1",
+            flags=flags,
+            state=state,
+            labels={"1480": "Co-Borrower Cell Phone (copied from Co-Borrower Home Phone)"},
+        )
+
+    if not borrower_home_phone and not borrower_cell_phone:
+        _flag(flags, "2.1", "Required Field Empty", "warning",
+              "Both Borrower Home Phone and Cell Phone are blank.",
+              "Obtain at least one phone number for the borrower.")
+
+    if has_coborrower and not coborrower_home_phone and not coborrower_cell_phone:
+        _flag(flags, "2.1", "Required Field Empty", "warning",
+              "Both Co-Borrower Home Phone and Cell Phone are blank.",
+              "Obtain at least one phone number for the co-borrower.")
+
+    # ── Rule: Accept Text/SMS ─────────────────────────────────────────────
+    _write_fields(
+        loan_id,
+        {"4920": "Y" if not _is_checked(borrower_accept_sms) else None},
+        substep="2.1",
+        flags=flags,
+        state=state,
+        labels={"4920": "Borrower Accept Text/SMS"},
+    )
+
+    if has_coborrower:
+        _write_fields(
+            loan_id,
+            {"4935": "Y" if not _is_checked(coborrower_accept_sms) else None},
+            substep="2.1",
+            flags=flags,
+            state=state,
+            labels={"4935": "Co-Borrower Accept Text/SMS"},
+        )
+
+    # ── Rule: Email present ───────────────────────────────────────────────
+    if not borrower_email:
+        _flag(flags, "2.1", "Email Missing", "warning",
+              "Borrower email address is blank.",
+              "Obtain and enter borrower email address.")
+
+    if has_coborrower and not coborrower_email:
+        _flag(flags, "2.1", "Co-Borrower Email Missing", "warning",
+              "Co-borrower email address is blank.",
+              "Obtain and enter co-borrower email address.")
+
+    # ── Rule: Credit Score ────────────────────────────────────────────────
+    if not credit_score:
+        _flag(flags, "2.1", "Credit Score Missing", "critical",
+              "Middle credit score (field 1168) is blank.",
+              "Ensure credit has been pulled and scores are populated in Encompass.")
+
+    # ── Rule: Loan Amount > 0 ─────────────────────────────────────────────
+    try:
+        if not loan_amount or float(str(loan_amount).replace(",", "")) <= 0:
+            _flag(flags, "2.1", "Loan Amount Missing", "critical",
+                  f"Loan amount is '{loan_amount or 'blank'}' — must be greater than zero.",
+                  "Enter the correct loan amount before proceeding.")
+    except (ValueError, TypeError):
+        _flag(flags, "2.1", "Loan Amount Missing", "critical",
+              f"Loan amount '{loan_amount}' could not be parsed.",
+              "Enter a valid numeric loan amount.")
+
+    # ── Rule: Property Address vs Purchase Contract ────────────────────────
+    if purchase_property_address_doc and property_address:
+        los_addr = str(property_address).strip().lower()
+        doc_addr = str(purchase_property_address_doc).strip().lower()
+        # Simple check: at least the street number + first word should match
+        los_parts = los_addr.split()
+        doc_parts = doc_addr.split()
+        if los_parts and doc_parts and los_parts[0] != doc_parts[0]:
+            _flag(flags, "2.1", "Property Address Mismatch", "warning",
+                  f"Encompass: '{property_address}' vs Purchase Contract: '{purchase_property_address_doc}'.",
+                  "Correct the property address in Encompass and flag for Lock Desk if needed.")
+
+    # ── Rule: ID Not Expired ──────────────────────────────────────────────
+    if dl_expiry_doc:
+        try:
+            for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%m-%d-%Y"):
+                try:
+                    expiry_date = datetime.strptime(str(dl_expiry_doc).strip(), fmt).date()
+                    break
+                except ValueError:
+                    continue
+            else:
+                expiry_date = None
+
+            if expiry_date and expiry_date < datetime.now(timezone.utc).date():
+                _flag(flags, "2.1", "Borrower ID Expired", "warning",
+                      f"Driver's License expired on {dl_expiry_doc}.",
+                      "Request a valid, non-expired government ID from the borrower.")
+        except Exception:
+            pass
+
+    # ── Build result ──────────────────────────────────────────────────────
     result = {
         "success": True,
         "substep": "2.1",
         "tool": "review_borrower_summary",
+        "has_coborrower": has_coborrower,
         "flags_count": len(flags),
+        "credit_score": credit_score,
+        "loan_amount": loan_amount,
+        "ami_eligibility": ami_eligibility,
         "message": "Review Borrower Summary - Origination completed" + (f" with {len(flags)} flags" if flags else ""),
     }
 

@@ -69,10 +69,10 @@ substeps:
     property 3 years ago — second checkbox should be Yes, not No.)
   los_fields_read:
   - key: declaration_primary_residence
-    field_id: '1490'
-    field_name: Declaration - Primary Residence Intent
+    field_id: '418'
+    field_name: Declaration - Primary Residence Intent (5a-A)
     category: declarations
-    purpose: Verify occupancy intent is correct
+    purpose: Verify occupancy intent is correct (Y/N)
   - key: declaration_ownership_3yr
     field_id: '1491'
     field_name: Declaration - Owned Property in Last 3 Years

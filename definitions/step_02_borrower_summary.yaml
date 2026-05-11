@@ -59,10 +59,15 @@ substeps:
     category: borrower_info
     purpose: Completeness check — needs live field ID validation
   - key: borrower_cell_phone
-    field_id: '1480'
+    field_id: '1490'
     field_name: Borrower Cell Phone
     category: borrower_info
     purpose: If empty, copy from home phone (field 66)
+  - key: borrower_accept_sms
+    field_id: '4920'
+    field_name: Borrower Accept Text/SMS
+    category: borrower_info
+    purpose: Auto-check if unchecked — required for text communications
   - key: borrower_email
     field_id: '1240'
     field_name: Borrower Email
@@ -115,10 +120,15 @@ substeps:
     category: borrower_info
     purpose: Completeness check if coborrower present — needs live field ID validation
   - key: coborrower_cell_phone
-    field_id: CX.COBORROWER.CELL.PHONE
+    field_id: '1480'
     field_name: Co-Borrower Cell Phone
     category: borrower_info
     purpose: Completeness check if coborrower present
+  - key: coborrower_accept_sms
+    field_id: '4935'
+    field_name: Co-Borrower Accept Text/SMS
+    category: borrower_info
+    purpose: Auto-check if unchecked and coborrower is present
   - key: coborrower_email
     field_id: '1179'
     field_name: Co-Borrower Email
@@ -253,10 +263,28 @@ substeps:
     severity: critical
     condition: Loan amount is zero or blank
     suggestion: Enter the correct loan amount before proceeding
+  - title: Credit Score Missing
+    severity: critical
+    condition: Middle credit score is blank
+    suggestion: Ensure credit has been pulled and scores are populated in Encompass
+  - title: Email Missing
+    severity: warning
+    condition: Borrower email is blank
+    suggestion: Obtain and enter borrower email address
+  - title: Co-Borrower Email Missing
+    severity: warning
+    condition: Co-borrower email is blank when co-borrower is present
+    suggestion: Obtain and enter co-borrower email address
   field_updates:
-  - field_id: '1480'
+  - field_id: '1490'
     value: '{borrower_home_phone}'
     condition: borrower_cell_phone is empty
+  - field_id: '4920'
+    value: 'true'
+    condition: borrower_accept_sms is unchecked
+  - field_id: '4935'
+    value: 'true'
+    condition: coborrower_accept_sms is unchecked and coborrower is present
 
 dev:
   skip: false
