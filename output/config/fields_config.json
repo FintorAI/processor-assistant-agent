@@ -2626,6 +2626,15 @@
       ]
     },
     {
+      "key": "paystubs_present",
+      "source_documents": [
+        "Paystubs"
+      ],
+      "used_by_steps": [
+        "STEP_01"
+      ]
+    },
+    {
       "key": "previous_date_terminated",
       "source_documents": [
         "VOE"
@@ -2844,7 +2853,7 @@
     {
       "key": "voe_present",
       "source_documents": [
-        "VOE"
+        "VOE - non service provider"
       ],
       "used_by_steps": [
         "STEP_01"
@@ -2853,8 +2862,8 @@
   ],
   "stats": {
     "total_los_fields": 219,
-    "total_doc_fields": 94,
-    "total_document_types": 28,
+    "total_doc_fields": 95,
+    "total_document_types": 29,
     "total_steps": 11,
     "categories": [
       "assets",
@@ -2901,6 +2910,7 @@
       "Underwriting (DU / LP)",
       "VOD",
       "VOE",
+      "VOE - non service provider",
       "VOL"
     ]
   }

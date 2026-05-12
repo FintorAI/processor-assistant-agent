@@ -114,7 +114,7 @@
           ]
         },
         "3": {
-          "name": "Fetch Doc Fields (28 document types)",
+          "name": "Fetch Doc Fields (29 document types)",
           "tools": [
             "fetch_doc_fields"
           ]

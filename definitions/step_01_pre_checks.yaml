@@ -53,11 +53,16 @@ substeps:
       purpose: Income raw relief indicator
     - key: aus_run_date
       purpose: Date of the AUS run (for staleness check)
-  - document_type: VOE
+  - document_type: VOE - non service provider
     all_copies: false
     fields:
     - key: voe_present
       purpose: Confirm VOE exists in eFolder
+  - document_type: Paystubs
+    all_copies: false
+    fields:
+    - key: paystubs_present
+      purpose: Confirm paystubs exist in eFolder (used alongside VOE for income verification)
   - document_type: Assets
     all_copies: false
     fields:

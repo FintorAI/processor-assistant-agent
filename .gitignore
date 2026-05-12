@@ -219,3 +219,11 @@ __marimo__/
 
 # Cursor rules
 .cursor/
+
+# Langgraph
+.langgraph_api/
+
+# Local
+rns_results/
+scripts/
+

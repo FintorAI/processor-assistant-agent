@@ -41,6 +41,9 @@
         "MD Settlement Services/Right to Choose"
       ],
       "extraction_mode": {
+        "Underwriting": "all",
+        "DU Findings / AUS Certificate": "all",
+        "AUS Certificate": "all",
         "VOE - non service provider": "all",
         "Paystubs": "all",
         "Borrower Income and Employment Certification": "all",

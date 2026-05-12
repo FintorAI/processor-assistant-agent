@@ -80,6 +80,7 @@ def run_pre_checks(
     aus_collateral_relief = _doc(state, "aus_collateral_relief")
     aus_income_raw_relief = _doc(state, "aus_income_raw_relief")
     voe_present          = _doc(state, "voe_present")
+    paystubs_present     = _doc(state, "paystubs_present")
     assets_present       = _doc(state, "assets_present")
     bank_statement_months = _doc(state, "bank_statement_months")
     vod_present          = _doc(state, "vod_present")
@@ -121,7 +122,6 @@ def run_pre_checks(
     }
     # Warning = submission will be incomplete but earlier steps can proceed
     warning_docs = {
-        "VOE": voe_present,
         "Assets": assets_present,
         "VOD": vod_present,
         "Driver's License": dl_present,
@@ -143,6 +143,21 @@ def run_pre_checks(
             _flag(flags, "1.1", "Missing Required Document", "warning",
                   f"{doc_name} not found in eFolder.",
                   "Locate or request the missing document before proceeding.")
+
+    # ── Rule: Income Docs (VOE and/or Paystubs) ──
+    # At least one income verification doc must be present
+    if not voe_present and not paystubs_present:
+        _flag(flags, "1.1", "Income Documents Missing", "warning",
+              "Neither VOE nor paystubs found in eFolder.",
+              "Request VOE or most recent paystubs from borrower for income verification.")
+    elif not voe_present:
+        _flag(flags, "1.1", "VOE Missing", "info",
+              "No VOE found — paystubs are present but VOE is preferred for salaried borrowers.",
+              "Request VOE from employer if borrower is W-2 employee.")
+    elif not paystubs_present:
+        _flag(flags, "1.1", "Paystubs Missing", "info",
+              "No paystubs found — VOE is present. Paystubs required alongside VOE for most loan types.",
+              "Request most recent 30-day paystubs from borrower.")
 
     # FACT ACT lives inside the Credit Report package
     if credit_report_present and not fact_act_present:
