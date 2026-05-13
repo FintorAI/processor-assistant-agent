@@ -286,6 +286,98 @@ def get_loan_type(loan_id: str) -> Optional[str]:
     return read_field(loan_id, FieldIds.LOAN_TYPE)
 
 
+def read_employment(
+    loan_id: str,
+    application_id: str = None,
+    applicant_type: str = "borrower",
+    state: dict = None,
+) -> List[Dict[str, Any]]:
+    """Fetch and normalise employment records from the Encompass v3 API.
+
+    Calls:
+        GET /encompass/v3/loans/{loanId}/applications/{applicationId}/{applicantType}/employment
+
+    Normalises each record into a consistent shape aligned with the existing
+    BE01xx/BE02xx field key names used throughout the tools layer::
+
+        {
+          "id":                   str,
+          "current":              bool,   # currentEmploymentIndicator
+          "employer_name":        str,
+          "employer_phone":       str,    # phoneNumber
+          "employer_street":      str,    # urla2020StreetAddress or addressStreetLine1
+          "employer_unit_type":   str,
+          "employer_unit_number": str,
+          "employer_city":        str,    # addressCity
+          "employer_state":       str,    # addressState
+          "employer_zip":         str,    # addressPostalCode
+          "position_title":       str,    # positionDescription
+          "date_hired":           str,    # employmentStartDate
+          "date_terminated":      str,    # endDate
+          "years_in_job":         int,    # timeOnJobTermYears
+          "months_in_job":        int,    # timeOnJobTermMonths
+          "years_in_line_of_work":int,    # timeInLineOfWorkYears
+          "monthly_base_pay":     float,  # basePayAmount
+          "monthly_income":       float,  # monthlyIncomeAmount
+          "self_employed":        bool,   # selfEmployedIndicator
+          "_raw":                 dict,   # original API record
+        }
+
+    Raises:
+        LookupError: if the API returns "collection does not exist"
+            (no employment rows created yet in Encompass).
+
+    Args:
+        loan_id: Encompass loan GUID
+        application_id: Auto-resolved if omitted
+        applicant_type: "borrower" (default) or "coborrower"
+        state: Optional state dict (passed to the HTTP client)
+    """
+    try:
+        from encompass_client import get_employment
+    except ImportError:
+        logger.warning("encompass_client not available — read_employment will fail at runtime")
+        return []
+
+    records = get_employment(
+        loan_id,
+        application_id=application_id,
+        applicant_type=applicant_type,
+        state=state,
+    )
+
+    normalised = []
+    for r in records:
+        street = r.get("urla2020StreetAddress") or r.get("addressStreetLine1") or ""
+        normalised.append({
+            "id":                    r.get("id", ""),
+            "current":               bool(r.get("currentEmploymentIndicator", False)),
+            "employer_name":         (r.get("employerName") or "").strip(),
+            "employer_phone":        (r.get("phoneNumber") or "").strip(),
+            "employer_street":       street.strip(),
+            "employer_unit_type":    (r.get("unitType") or "").strip(),
+            "employer_unit_number":  (r.get("unitNumber") or "").strip(),
+            "employer_city":         (r.get("addressCity") or "").strip(),
+            "employer_state":        (r.get("addressState") or "").strip(),
+            "employer_zip":          (r.get("addressPostalCode") or "").strip(),
+            "position_title":        (r.get("positionDescription") or "").strip(),
+            "date_hired":            (r.get("employmentStartDate") or "").strip(),
+            "date_terminated":       (r.get("endDate") or "").strip(),
+            "years_in_job":          r.get("timeOnJobTermYears"),
+            "months_in_job":         r.get("timeOnJobTermMonths"),
+            "years_in_line_of_work": r.get("timeInLineOfWorkYears"),
+            "monthly_base_pay":      r.get("basePayAmount"),
+            "monthly_income":        r.get("monthlyIncomeAmount"),
+            "self_employed":         bool(r.get("selfEmployedIndicator", False)),
+            "_raw":                  r,
+        })
+
+    logger.info(
+        f"[ENCOMPASS] read_employment: {len(normalised)} {applicant_type} record(s) for loan {loan_id[:8]}"
+    )
+    return normalised
+
+
 def read_vods(loan_id: str, state: dict = None) -> List[Dict[str, Any]]:
     """Fetch and normalise all VOD entries for a loan from the Encompass v3 API.
 

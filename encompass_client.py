@@ -1180,6 +1180,196 @@ def update_trustee_entity(
         return {"success": False, "error": error_msg}
 
 
+def get_employment(
+    loan_id: str,
+    application_id: str = None,
+    applicant_type: str = "borrower",
+    state: dict = None,
+) -> list[dict[str, any]]:
+    """Get employment records for a borrower or co-borrower from the Encompass v3 API.
+
+    Uses Encompass v3 API:
+        GET /encompass/v3/loans/{loanId}/applications/{applicationId}/{applicantType}/employment
+
+    Args:
+        loan_id: Encompass loan GUID
+        application_id: Application ID (auto-resolved via get_loan_applications if omitted)
+        applicant_type: "borrower" (default) or "coborrower"
+        state: Optional state dict to determine environment
+
+    Returns:
+        List of employment record dicts. Each record typically contains::
+
+            {
+              "id": str,
+              "currentIndicator": bool,
+              "employerName": str,
+              "employerPhone": str,
+              "employerAddress": {
+                "street1": str, "city": str, "state": str, "postalCode": str
+              },
+              "positionDescription": str,
+              "startDate": str,        # ISO date or MM/DD/YYYY
+              "endDate": str | None,
+              "employmentMonthlyIncomeAmount": float,
+              "timeInLineOfWorkYears": int,
+              "timeInLineOfWorkMonths": int,
+              "selfEmployedIndicator": bool,
+            }
+
+    Raises:
+        LookupError: if the employment collection does not exist (no rows created yet).
+        Exception: on any other API error.
+    """
+    import requests
+
+    client = get_encompass_client(state=state)
+
+    if not application_id:
+        try:
+            apps = get_loan_applications(loan_id, state=state)
+            application_id = apps[0].get("id", "1") if apps else "1"
+        except Exception:
+            application_id = "1"
+
+    url = (
+        f"{client.api_base_url}/encompass/v3/loans/{loan_id}"
+        f"/applications/{application_id}/{applicant_type}/employment"
+    )
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {client.access_token}",
+    }
+
+    try:
+        response = requests.get(url, headers=headers, timeout=30)
+
+        if response.status_code == 401:
+            client.refresh_token()
+            headers["Authorization"] = f"Bearer {client.access_token}"
+            response = requests.get(url, headers=headers, timeout=30)
+
+        if response.status_code == 404:
+            body_lc = (response.text or "").lower()
+            if any(kw in body_lc for kw in ("collection", "application", "does not exist", "not found")):
+                raise LookupError(
+                    f"Employment collection does not exist for {applicant_type} — no rows created yet"
+                )
+            logger.info(f"[ENCOMPASS] No employment records found for {applicant_type} on loan {loan_id[:8]}")
+            return []
+
+        if response.status_code != 200:
+            logger.error(f"[ENCOMPASS] Employment GET failed ({response.status_code}): {response.text[:200]}")
+            raise Exception(f"Employment API error {response.status_code}: {response.text[:200]}")
+
+        records = response.json()
+        if not isinstance(records, list):
+            records = [records]
+        logger.info(
+            f"[ENCOMPASS] Retrieved {len(records)} employment record(s) "
+            f"for {applicant_type} on loan {loan_id[:8]}"
+        )
+        return records
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"[ENCOMPASS] Network error getting employment: {e}")
+        raise
+
+
+def get_other_income_sources(
+    loan_id: str,
+    application_id: str = None,
+    state: dict = None,
+) -> list[dict[str, any]]:
+    """Get other income sources for a loan application.
+
+    GET /encompass/v3/loans/{loanId}/applications/{applicationId}/otherIncomeSources
+
+    Raises LookupError if the collection does not exist yet.
+    """
+    import requests
+
+    client = get_encompass_client(state=state)
+    if not application_id:
+        try:
+            apps = get_loan_applications(loan_id, state=state)
+            application_id = apps[0].get("id", "1") if apps else "1"
+        except Exception:
+            application_id = "1"
+
+    url = f"{client.api_base_url}/encompass/v3/loans/{loan_id}/applications/{application_id}/otherIncomeSources"
+    headers = {"accept": "application/json", "Authorization": f"Bearer {client.access_token}"}
+
+    try:
+        response = requests.get(url, headers=headers, timeout=30)
+        if response.status_code == 401:
+            client.refresh_token()
+            headers["Authorization"] = f"Bearer {client.access_token}"
+            response = requests.get(url, headers=headers, timeout=30)
+        if response.status_code == 404:
+            body_lc = (response.text or "").lower()
+            if any(kw in body_lc for kw in ("collection", "application", "does not exist", "not found")):
+                raise LookupError("otherIncomeSources collection does not exist — no rows created yet")
+            return []
+        if response.status_code != 200:
+            raise Exception(f"otherIncomeSources API error {response.status_code}: {response.text[:200]}")
+        records = response.json()
+        if not isinstance(records, list):
+            records = [records]
+        logger.info(f"[ENCOMPASS] get_other_income_sources: {len(records)} record(s) for loan {loan_id[:8]}")
+        return records
+    except requests.exceptions.RequestException as e:
+        logger.error(f"[ENCOMPASS] Network error getting otherIncomeSources: {e}")
+        raise
+
+
+def get_other_assets(
+    loan_id: str,
+    application_id: str = None,
+    state: dict = None,
+) -> list[dict[str, any]]:
+    """Get other assets for a loan application.
+
+    GET /encompass/v3/loans/{loanId}/applications/{applicationId}/otherAssets
+
+    Raises LookupError if the collection does not exist yet.
+    """
+    import requests
+
+    client = get_encompass_client(state=state)
+    if not application_id:
+        try:
+            apps = get_loan_applications(loan_id, state=state)
+            application_id = apps[0].get("id", "1") if apps else "1"
+        except Exception:
+            application_id = "1"
+
+    url = f"{client.api_base_url}/encompass/v3/loans/{loan_id}/applications/{application_id}/otherAssets"
+    headers = {"accept": "application/json", "Authorization": f"Bearer {client.access_token}"}
+
+    try:
+        response = requests.get(url, headers=headers, timeout=30)
+        if response.status_code == 401:
+            client.refresh_token()
+            headers["Authorization"] = f"Bearer {client.access_token}"
+            response = requests.get(url, headers=headers, timeout=30)
+        if response.status_code == 404:
+            body_lc = (response.text or "").lower()
+            if any(kw in body_lc for kw in ("collection", "application", "does not exist", "not found")):
+                raise LookupError("otherAssets collection does not exist — no rows created yet")
+            return []
+        if response.status_code != 200:
+            raise Exception(f"otherAssets API error {response.status_code}: {response.text[:200]}")
+        records = response.json()
+        if not isinstance(records, list):
+            records = [records]
+        logger.info(f"[ENCOMPASS] get_other_assets: {len(records)} record(s) for loan {loan_id[:8]}")
+        return records
+    except requests.exceptions.RequestException as e:
+        logger.error(f"[ENCOMPASS] Network error getting otherAssets: {e}")
+        raise
+
+
 def get_loan_applications(loan_id: str, state: dict = None) -> list[dict[str, any]]:
     """Get all applications (borrower pairs) for a loan.
 

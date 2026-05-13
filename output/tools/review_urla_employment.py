@@ -18,6 +18,7 @@ from langgraph.prebuilt import InjectedState
 from langgraph.types import Command
 
 from ._helpers import _los, _doc, _profile
+from shared.encompass_io import read_employment
 
 logger = logging.getLogger(__name__)
 
@@ -53,46 +54,10 @@ def _parse_amount(v: Optional[str]) -> Optional[float]:
         return None
 
 
-def _total_months(years_str: Optional[str], months_str: Optional[str]) -> Optional[int]:
-    """Convert years+months strings to total months. Returns None if both empty."""
-    y = int(years_str) if years_str and years_str.strip().isdigit() else None
-    m = int(months_str) if months_str and months_str.strip().isdigit() else None
-    if y is None and m is None:
-        return None
-    return (y or 0) * 12 + (m or 0)
-
-
-# ── Employment entry parser ────────────────────────────────────────────────────
-
-def _read_entry(state: dict, prefix: str) -> dict:
-    """Read all BE fields for a given entry prefix (e.g. 'be01')."""
-    return {
-        "employment_type":    _los(state, f"{prefix}_employment_type"),   # BE0x09
-        "voe_is_for":         _los(state, f"{prefix}_voe_is_for"),        # BE0x08
-        "foreign_address":    _los(state, f"{prefix}_foreign_address"),   # BE0x80
-        "employer_name":      _los(state, f"{prefix}_employer_name"),     # BE0x02
-        "employer_phone":     _los(state, f"{prefix}_employer_phone"),    # BE0x17
-        "employer_street":    _los(state, f"{prefix}_employer_street"),   # BE0x60
-        "employer_unit_type": _los(state, f"{prefix}_employer_unit_type"),# BE0x58
-        "employer_unit_num":  _los(state, f"{prefix}_employer_unit_number"),# BE0x59
-        "employer_city":      _los(state, f"{prefix}_employer_city"),     # BE0x05
-        "employer_state":     _los(state, f"{prefix}_employer_state"),    # BE0x06
-        "employer_zip":       _los(state, f"{prefix}_employer_zip"),      # BE0x07
-        "position_title":     _los(state, f"{prefix}_position_title"),    # BE0x10
-        "date_hired":         _los(state, f"{prefix}_date_hired"),        # BE0x51
-        "date_terminated":    _los(state, f"{prefix}_date_terminated"),   # BE0x14
-        "years_in_job":       _los(state, f"{prefix}_years_in_job"),      # BE0x13
-        "months_in_job":      _los(state, f"{prefix}_months_in_job"),     # BE0x33
-        "years_in_line_of_work":  _los(state, f"{prefix}_years_in_line_of_work"), # BE0x16
-        "months_in_line_of_work": _los(state, f"{prefix}_months_in_line_of_work"),# BE0x52
-        "monthly_base_pay":   _los(state, f"{prefix}_monthly_base_pay"), # BE0x19
-        "authorization_printed": _los(state, f"{prefix}_authorization_printed") if prefix == "be01" else None,  # BE0236 only on entry 1
-    }
-
 
 def _entry_populated(entry: dict) -> bool:
-    """True if at least employer_name or employment_type is set."""
-    return bool(entry.get("employer_name") or entry.get("employment_type"))
+    """True if at least employer_name is set."""
+    return bool(entry.get("employer_name"))
 
 
 # ── Main tool ─────────────────────────────────────────────────────────────────
@@ -125,25 +90,18 @@ def review_urla_employment(
     flags = []
     loan_type = _los(state, "loan_type") or ""
 
-    # ── Read all three employment entries ─────────────────────────────────────
-    entries = {
-        "be01": _read_entry(state, "be01"),
-        "be02": _read_entry(state, "be02"),
-        "be03": _read_entry(state, "be03"),
-    }
-
-    # ── Guard: no VOE rows created at all ─────────────────────────────────────
-    # This mirrors the Encompass API behaviour where fetching /voes returns a
-    # "collection does not exist" error when the form has never been filled in.
-    # At the LOS field level, all BE01xx/BE02xx/BE03xx fields will be empty.
-    if not any(_entry_populated(e) for e in entries.values()):
+    # ── Fetch employment records from Encompass v3 API ─────────────────────────
+    # GET /encompass/v3/loans/{loanId}/applications/{applicationId}/borrower/employment
+    try:
+        api_entries = read_employment(loan_id, state=state, applicant_type="borrower")
+    except LookupError as e:
+        # API returned "collection does not exist" — no rows created yet
         flags.append(_flag(
             "4.1",
             "VOE Form Not Populated in Encompass",
             "blocking",
-            "No employment entries found (BE0102/BE0209 all empty). "
-            "The VOE form has not been filled in — equivalent to the Encompass API "
-            "returning 'collection does not exist' for /applications/{id}/voes.",
+            f"Encompass v3 employment API returned 'collection does not exist': {e}. "
+            "No employment rows have been created in the VOE form.",
             "Open the VOE form in Encompass and add the borrower's current (and prior, if < 2 years) employer entries.",
         ))
         result = {
@@ -152,7 +110,39 @@ def review_urla_employment(
             "tool": "review_urla_employment",
             "entries_found": 0,
             "flags_count": len(flags),
-            "message": "Employment Verification blocked — no VOE entries in Encompass",
+            "message": "Employment Verification blocked — VOE form not populated in Encompass",
+        }
+        return Command(update={
+            "flags": flags,
+            "messages": [ToolMessage(content=json.dumps(result), tool_call_id=tool_call_id)],
+        })
+    except Exception as e:
+        logger.error(f"[REVIEW_URLA_EMPLOYMENT] Employment API failed: {e}")
+        flags.append(_flag(
+            "4.1",
+            "Employment API Error",
+            "warning",
+            f"Could not fetch employment records from Encompass v3 API: {e}",
+            "Check Encompass connectivity and retry.",
+        ))
+        api_entries = []
+
+    # ── Guard: empty response ─────────────────────────────────────────────────
+    if not api_entries:
+        flags.append(_flag(
+            "4.1",
+            "VOE Form Not Populated in Encompass",
+            "blocking",
+            "Encompass v3 employment API returned no records for this borrower.",
+            "Open the VOE form in Encompass and add the borrower's current (and prior, if < 2 years) employer entries.",
+        ))
+        result = {
+            "success": False,
+            "substep": "4.1",
+            "tool": "review_urla_employment",
+            "entries_found": 0,
+            "flags_count": len(flags),
+            "message": "Employment Verification blocked — no VOE entries found",
         }
         return Command(update={
             "flags": flags,
@@ -160,35 +150,29 @@ def review_urla_employment(
         })
 
     # ── Identify current and prior entries ────────────────────────────────────
-    # BE0109 values: "Current" or "Prior" (Encompass uses these exact labels)
+    # currentEmploymentIndicator: True = Current, False = Prior
     current_entry = None
     prior_entries = []
 
-    for key, e in entries.items():
+    for e in api_entries:
         if not _entry_populated(e):
             continue
-        emp_type = (e.get("employment_type") or "").strip()
-        if not emp_type:
-            flags.append(_flag("4.1",
-                "Employment Type Not Set (BE0109)",
-                "blocking",
-                f"Entry {key.upper()} has employer '{e.get('employer_name')}' but BE0109 (employment type) is empty.",
-                "Set employment type to Current or Prior in Encompass",
-            ))
-            continue
-        if emp_type.lower() == "current":
+        if e.get("current"):
             if current_entry:
-                # Multiple current entries — flag but use first
                 flags.append(_flag("4.1",
                     "Multiple Current Employers",
                     "warning",
-                    f"Both {list(entries.keys())[0].upper()} and {key.upper()} are marked Current.",
-                    "Verify only one entry should be Current; mark additional entries as Prior if applicable",
+                    f"More than one employment record has currentEmploymentIndicator=True. "
+                    f"First: '{current_entry.get('employer_name')}', also: '{e.get('employer_name')}'.",
+                    "Verify only one entry should be Current; mark additional entries as Prior if applicable.",
                 ))
             else:
                 current_entry = e
-        elif emp_type.lower() in ("prior", "previous"):
+        else:
             prior_entries.append(e)
+
+    # Build a dict-of-entries keyed by index for backward compatibility
+    entries = {f"api_{i}": e for i, e in enumerate(api_entries)}
 
     # ── Read VOE doc fields ───────────────────────────────────────────────────
     # We read both current_ and previous_ from the extracted VOE doc
@@ -226,34 +210,16 @@ def review_urla_employment(
     if current_entry:
         e = current_entry
 
-        # VOE is for — must be Borrower or Co-Borrower
-        voe_is_for = (e.get("voe_is_for") or "").strip()
-        if voe_is_for and voe_is_for not in ("Borrower", "Co-Borrower"):
+        # printAttachmentIndicator — "print see attached borrower's authorization"
+        raw = e.get("_raw") or {}
+        print_auth = raw.get("printAttachmentIndicator")
+        if print_auth is False:
             flags.append(_flag("4.1",
-                "VOE Is For — Invalid Value",
+                "Authorization Attachment Not Checked",
                 "warning",
-                f"BE0108 (VOE is for) has unexpected value '{voe_is_for}'. Expected Borrower or Co-Borrower.",
-                "Correct the 'VOE is for' field in Encompass",
+                "printAttachmentIndicator is False — 'see attached borrower's authorization' will not print on the VOE signature line.",
+                "Check the authorization attachment checkbox in Encompass for the current employer.",
             ))
-
-        # Authorization checkbox (BE0236) — must be checked for current employer
-        auth_val = (e.get("authorization_printed") or "").strip().lower()
-        if auth_val in ("false", "no", "0", "unchecked", ""):
-            if auth_val == "":
-                # May not be populated — flag as advisory
-                flags.append(_flag("4.1",
-                    "Authorization Checkbox Not Verified (BE0236)",
-                    "warning",
-                    "BE0236 (Print see attached borrower's authorization) could not be confirmed as checked.",
-                    "Verify the authorization checkbox is checked in Encompass for the current employer",
-                ))
-            else:
-                flags.append(_flag("4.1",
-                    "Authorization Checkbox Not Checked (BE0236)",
-                    "warning",
-                    "BE0236 is unchecked. The 'see attached borrower's authorization' reference will not print on the signature line.",
-                    "Check the authorization checkbox in Encompass for the current employer",
-                ))
 
         # Employer name
         if voe_cur_name:
@@ -326,7 +292,9 @@ def review_urla_employment(
                     ))
 
         # Employment duration — trigger gap check if < 2 years total
-        total_mos = _total_months(e.get("years_in_job"), e.get("months_in_job"))
+        yrs = e.get("years_in_job")
+        mos = e.get("months_in_job")
+        total_mos = (int(yrs or 0) * 12 + int(mos or 0)) if (yrs is not None or mos is not None) else None
         if total_mos is not None and total_mos < 24:
             if not prior_entries:
                 flags.append(_flag("4.1",
@@ -382,7 +350,7 @@ def review_urla_employment(
                         "Reconcile prior employer base pay with the VOE",
                     ))
 
-    # ── Section 1b: FE0119 / FE0219 base monthly income + URLA.X201/X202 ────────
+    # ── Section 1b: FE0119 / FE0219 base monthly income + URLA.X201/X202 ─────────
     # Borrower
     borr_dna_checked = str(borr_dna or "").strip().lower() in ("true", "yes", "1", "checked")
     if not borr_dna_checked:
@@ -396,10 +364,14 @@ def review_urla_employment(
 
     # Co-borrower — only check if a co-borrower entry exists in the loan
     coborr_dna_checked = str(coborr_dna or "").strip().lower() in ("true", "yes", "1", "checked")
-    has_coborr = any(
-        (e.get("voe_is_for") or "").strip().lower() == "co-borrower"
-        for e in entries.values() if _entry_populated(e)
-    )
+    # Co-borrower check: try fetching co-borrower employment from the API
+    try:
+        coborr_entries = read_employment(loan_id, state=state, applicant_type="coborrower")
+        has_coborr = len(coborr_entries) > 0
+    except LookupError:
+        has_coborr = False
+    except Exception:
+        has_coborr = False
     if has_coborr and not coborr_dna_checked:
         if not coborr_base_income or not coborr_base_income.strip():
             flags.append(_flag("4.1",
@@ -448,7 +420,7 @@ def review_urla_employment(
                     pass
 
     # ── Build result ──────────────────────────────────────────────────────────
-    populated_entries = sum(1 for e in entries.values() if _entry_populated(e))
+    populated_entries = len(api_entries)
     result = {
         "success": True,
         "substep": "4.1",
