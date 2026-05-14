@@ -156,7 +156,10 @@ def _derive_loan_characteristics(state: dict) -> tuple[str, str, int]:
 # ── Field mapping: field_id -> {key, field_name, category} ──
 FIELD_MAP = {
     "1041": {"key": "property_type", "field_name": "Property Type", "category": "property"},
-    "1065": {"key": "marital_status", "field_name": "Borrower Marital Status", "category": "borrower_info"},
+    "52": {"key": "borrower_marital_status", "field_name": "Borrower Marital Status", "category": "borrower_info"},
+    "53": {"key": "borrower_dependents_count", "field_name": "Borrower Dependents Count", "category": "borrower_info"},
+    "54": {"key": "borrower_dependent_ages", "field_name": "Borrower Dependent Ages", "category": "borrower_info"},
+    "84": {"key": "coborrower_marital_status", "field_name": "Co-Borrower Marital Status", "category": "borrower_info"},
     "1068": {"key": "employment_start_date", "field_name": "Employment Start Date (Hire Date)", "category": "employment"},
     "1072": {"key": "base_monthly_income", "field_name": "Base Monthly Income", "category": "income"},
     "1073": {"key": "years_in_profession", "field_name": "Years in Profession", "category": "employment"},
@@ -170,8 +173,8 @@ FIELD_MAP = {
     # "1286": invalid field ID in Encompass batch API — removed 2026-05-14
     "14": {"key": "property_state", "field_name": "Property State", "category": "property"},
     "1402": {"key": "borrower_dob", "field_name": "Borrower Date of Birth", "category": "borrower_info"},
-    "1480": {"key": "borrower_cell_phone", "field_name": "Borrower Cell Phone", "category": "borrower_info"},
-    "1490": {"key": "declaration_primary_residence", "field_name": "Declaration - Primary Residence Intent", "category": "declarations"},
+    "1480": {"key": "coborrower_cell_phone", "field_name": "Co-Borrower Cell Phone", "category": "borrower_info"},
+    "1490": {"key": "borrower_cell_phone", "field_name": "Borrower Cell Phone", "category": "borrower_info"},
     # "1491": invalid field ID in Encompass batch API — removed 2026-05-14
     "15": {"key": "property_zip", "field_name": "Property ZIP", "category": "property"},
     "1544": {"key": "borrower_ethnicity", "field_name": "Borrower Ethnicity", "category": "borrower_info"},
@@ -230,6 +233,58 @@ FIELD_MAP = {
     "CX.VESTING.DESCRIPTION": {"key": "vesting_description", "field_name": "Vesting Description", "category": "title"},
     "CX.WIREDATELO": {"key": "wire_requested_date", "field_name": "Wire Requested Date", "category": "closing"},
     "748": {"key": "closing_date", "field_name": "Closing Date", "category": "closing"},
+    # ── Borrower Contact Info ──
+    "1240": {"key": "borrower_email", "field_name": "Borrower Email", "category": "borrower_info"},
+    "1179": {"key": "coborrower_email", "field_name": "Co-Borrower Email", "category": "borrower_info"},
+    "1715": {"key": "borrower_work_phone", "field_name": "Borrower Business/Work Phone", "category": "borrower_info"},
+    "1716": {"key": "coborrower_work_phone", "field_name": "Co-Borrower Business/Work Phone", "category": "borrower_info"},
+    "98": {"key": "coborrower_home_phone", "field_name": "Co-Borrower Home Phone", "category": "borrower_info"},
+    "4920": {"key": "borrower_accept_sms", "field_name": "Borrower Accept Text/SMS", "category": "borrower_info"},
+    "4935": {"key": "coborrower_accept_sms", "field_name": "Co-Borrower Accept Text/SMS", "category": "borrower_info"},
+    "4003": {"key": "borrower_name_suffix", "field_name": "Borrower Name Suffix", "category": "borrower_info"},
+    "97": {"key": "coborrower_ssn", "field_name": "Co-Borrower SSN", "category": "borrower_info"},
+    "1403": {"key": "coborrower_dob", "field_name": "Co-Borrower Date of Birth", "category": "borrower_info"},
+    "4114": {"key": "borrower_est_closing_date", "field_name": "Borrower Est Closing Date", "category": "borrower_info"},
+    # ── Credit ──
+    "67": {"key": "experian_score", "field_name": "Borrower Experian/FICO Score", "category": "credit"},
+    "60": {"key": "coborrower_experian_score", "field_name": "Co-Borrower Experian/FICO Score", "category": "credit"},
+    "1414": {"key": "equifax_score", "field_name": "Borrower Equifax/Beacon Score", "category": "credit"},
+    "1415": {"key": "coborrower_equifax_score", "field_name": "Co-Borrower Equifax/Beacon Score", "category": "credit"},
+    "1450": {"key": "transunion_score", "field_name": "Borrower TransUnion/Empirica Score", "category": "credit"},
+    "1452": {"key": "coborrower_transunion_score", "field_name": "Co-Borrower TransUnion/Empirica Score", "category": "credit"},
+    "300": {"key": "credit_reference_number", "field_name": "Credit Reference Number", "category": "credit"},
+    "VASUMM.X23": {"key": "credit_score_decision", "field_name": "Credit Score for Decision Making", "category": "credit"},
+    # ── Loan Info (Borrower Summary fields) ──
+    "1264": {"key": "lender", "field_name": "Lender", "category": "loan_info"},
+    "1401": {"key": "loan_program", "field_name": "Loan Program", "category": "loan_info"},
+    "1785": {"key": "closing_cost_program", "field_name": "Closing Cost Program", "category": "loan_info"},
+    "1051": {"key": "mers_min", "field_name": "MERS MIN", "category": "loan_info"},
+    "420": {"key": "lien_position", "field_name": "Lien Position", "category": "loan_info"},
+    "608": {"key": "amort_type", "field_name": "Amortization Type", "category": "loan_info"},
+    "4": {"key": "loan_term_months", "field_name": "Loan Term (Months)", "category": "loan_info"},
+    "325": {"key": "term_due_in_months", "field_name": "Term Due In (Months)", "category": "loan_info"},
+    "3293": {"key": "undiscounted_rate", "field_name": "Undiscounted Rate", "category": "loan_info"},
+    "3941": {"key": "secondary_registration", "field_name": "Secondary Registration", "category": "loan_info"},
+    "432": {"key": "lock_days", "field_name": "Lock Period (# of Days)", "category": "loan_info"},
+    "761": {"key": "lock_date", "field_name": "Lock Date", "category": "loan_info"},
+    "2400": {"key": "rate_is_locked", "field_name": "Rate Is Locked (Y/N)", "category": "loan_info"},
+    "3253": {"key": "last_rate_set_date", "field_name": "Last Rate Set Date", "category": "loan_info"},
+    "3259": {"key": "rate_lock_disclosure_date", "field_name": "Rate Lock Disclosure Date", "category": "loan_info"},
+    # ── Income / Payment ──
+    "5": {"key": "monthly_payment", "field_name": "Monthly Payment (P&I)", "category": "income"},
+    "912": {"key": "total_monthly_payment", "field_name": "Total Monthly Payment", "category": "income"},
+    "736": {"key": "monthly_income", "field_name": "Monthly Income", "category": "income"},
+    # ── Assets / Down Payment ──
+    "136": {"key": "los_purchase_price", "field_name": "Purchase Price (LOS)", "category": "assets"},
+    "1771": {"key": "down_payment_pct", "field_name": "Down Payment %", "category": "assets"},
+    "1335": {"key": "down_payment_amount", "field_name": "Down Payment Amount", "category": "assets"},
+    # ── Property ──
+    "13": {"key": "property_county", "field_name": "Property County", "category": "property"},
+    "1821": {"key": "estimated_value", "field_name": "Estimated Value", "category": "property"},
+    # ── Closing ──
+    "763": {"key": "est_closing_date", "field_name": "Est Closing Date", "category": "closing"},
+    # ── Declarations ──
+    "418": {"key": "declaration_primary_residence", "field_name": "Declaration - Primary Residence Intent", "category": "declarations"},
 }
 
 ALL_FIELD_IDS = list(FIELD_MAP.keys())
