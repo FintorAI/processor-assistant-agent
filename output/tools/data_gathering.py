@@ -8,6 +8,7 @@ Originally auto-generated from field registry, then extended with:
 The factory will NOT overwrite this file if it already exists.
 To regenerate from scratch, delete this file first, then run `generate --all`.
 """
+# FACTORY-LOCK: true
 
 import json
 import logging
