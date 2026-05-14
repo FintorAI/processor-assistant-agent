@@ -1,14 +1,14 @@
 step:
-  id: STEP_15
+  id: STEP_10
   name: Processor Workflow and Closing
-  phase: PROCESSOR_UPDATE
+  phase: FORM_UPDATES
   description: >
     Update the Processor Workflow screen and Processor Closing screen.
     Covers: Conforming/Non-Del Inv. Approval, doc type, signing date,
     and wire requested date.
 
 substeps:
-- id: '15.1'
+- id: '10.1'
   name: Processor Workflow Update
   tool: update_processor_workflow
   description: >
@@ -45,7 +45,7 @@ substeps:
     suggestion: Select Wet-Signed / E-Sign / Hybrid for this loan
   field_updates: []
 
-- id: '15.2'
+- id: '10.2'
   name: Processor Closing Update
   tool: update_processor_closing
   description: >

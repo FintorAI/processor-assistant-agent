@@ -42,12 +42,10 @@ from .draft_cover_letter import draft_cover_letter
 from .update_borrower_vesting import update_borrower_vesting
 # STEP_09 / 9.1: Update Transmittal Summary
 from .update_transmittal_summary import update_transmittal_summary
-# STEP_15 / 15.1: Processor Workflow Update
+# STEP_10 / 10.1: Processor Workflow Update
 from .update_processor_workflow import update_processor_workflow
-# STEP_15 / 15.2: Processor Closing Update
+# STEP_10 / 10.2: Processor Closing Update
 from .update_processor_closing import update_processor_closing
-# STEP_17 / 17.3: Milestone Change and Processor Name
-from .update_milestone import update_milestone
 
 def get_all_tools() -> list:
     """Return all tool functions."""
@@ -81,7 +79,6 @@ def get_all_tools() -> list:
     tools.append(update_transmittal_summary)
     tools.append(update_processor_workflow)
     tools.append(update_processor_closing)
-    tools.append(update_milestone)
     return tools
 
 
@@ -113,5 +110,4 @@ __all__ = [
     "update_transmittal_summary",
     "update_processor_workflow",
     "update_processor_closing",
-    "update_milestone",
 ]

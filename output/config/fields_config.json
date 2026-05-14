@@ -1485,7 +1485,7 @@
       "field_name": "Doc Type (Wet / E-sign / Hybrid)",
       "category": "processor_workflow",
       "used_by_steps": [
-        "STEP_15"
+        "STEP_10"
       ]
     },
     {
@@ -1503,7 +1503,7 @@
       "field_name": "Investor Type (Conforming / Non-Del)",
       "category": "processor_workflow",
       "used_by_steps": [
-        "STEP_15"
+        "STEP_10"
       ]
     },
     {
@@ -1543,15 +1543,6 @@
       ]
     },
     {
-      "key": "current_milestone",
-      "field_id": "CX.MILESTONE.CURRENT",
-      "field_name": "Current Milestone",
-      "category": "loan_info",
-      "used_by_steps": [
-        "STEP_17"
-      ]
-    },
-    {
       "key": "nbs_flag",
       "field_id": "CX.NBSFLAG",
       "field_name": "Non-Borrowing Spouse Flag",
@@ -1570,21 +1561,12 @@
       ]
     },
     {
-      "key": "processor_name",
-      "field_id": "CX.PROCESSOR.NAME",
-      "field_name": "Processor Name",
-      "category": "loan_info",
-      "used_by_steps": [
-        "STEP_17"
-      ]
-    },
-    {
       "key": "signing_date",
       "field_id": "CX.SIGNING.DATE",
       "field_name": "Signing Date",
       "category": "closing",
       "used_by_steps": [
-        "STEP_15"
+        "STEP_10"
       ]
     },
     {
@@ -1593,7 +1575,7 @@
       "field_name": "Wire Requested Date",
       "category": "closing",
       "used_by_steps": [
-        "STEP_15"
+        "STEP_10"
       ]
     },
     {
@@ -2870,10 +2852,10 @@
     }
   ],
   "stats": {
-    "total_los_fields": 220,
+    "total_los_fields": 218,
     "total_doc_fields": 95,
     "total_document_types": 29,
-    "total_steps": 11,
+    "total_steps": 10,
     "categories": [
       "assets",
       "borrower_info",

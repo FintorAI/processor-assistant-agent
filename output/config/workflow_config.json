@@ -65,13 +65,8 @@
     "FORM_UPDATES": [
       "STEP_07",
       "STEP_08",
-      "STEP_09"
-    ],
-    "PROCESSOR_UPDATE": [
-      "STEP_15"
-    ],
-    "SUBMISSION": [
-      "STEP_17"
+      "STEP_09",
+      "STEP_10"
     ]
   },
   "step_order": [
@@ -85,8 +80,7 @@
     "STEP_07",
     "STEP_08",
     "STEP_09",
-    "STEP_15",
-    "STEP_17"
+    "STEP_10"
   ],
   "steps": {
     "STEP_00": {
@@ -108,7 +102,7 @@
           ]
         },
         "2": {
-          "name": "Fetch LOS Fields (220 fields)",
+          "name": "Fetch LOS Fields (218 fields)",
           "tools": [
             "fetch_los_fields"
           ]
@@ -370,9 +364,9 @@
         }
       }
     },
-    "STEP_15": {
+    "STEP_10": {
       "name": "Processor Workflow and Closing",
-      "phase": "PROCESSOR_UPDATE",
+      "phase": "FORM_UPDATES",
       "plan_file": "processor_workflow_and_closing.md",
       "tools": [
         "update_processor_closing",
@@ -389,22 +383,6 @@
           "name": "Processor Closing Update",
           "tools": [
             "update_processor_closing"
-          ]
-        }
-      }
-    },
-    "STEP_17": {
-      "name": "Submission",
-      "phase": "SUBMISSION",
-      "plan_file": "submission.md",
-      "tools": [
-        "update_milestone"
-      ],
-      "substeps": {
-        "3": {
-          "name": "Milestone Change and Processor Name",
-          "tools": [
-            "update_milestone"
           ]
         }
       }
