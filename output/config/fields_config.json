@@ -74,7 +74,8 @@
       "used_by_steps": [
         "STEP_01",
         "STEP_02",
-        "STEP_07"
+        "STEP_07",
+        "STEP_10"
       ]
     },
     {
@@ -443,7 +444,8 @@
       "used_by_steps": [
         "STEP_02",
         "STEP_03",
-        "STEP_08"
+        "STEP_08",
+        "STEP_10"
       ]
     },
     {
@@ -872,6 +874,15 @@
       "category": "income",
       "used_by_steps": [
         "STEP_02"
+      ]
+    },
+    {
+      "key": "closing_date",
+      "field_id": "748",
+      "field_name": "Closing Date",
+      "category": "closing",
+      "used_by_steps": [
+        "STEP_10"
       ]
     },
     {
@@ -1407,6 +1418,15 @@
       ]
     },
     {
+      "key": "signing_date",
+      "field_id": "CUST50FV",
+      "field_name": "Signing Date",
+      "category": "closing",
+      "used_by_steps": [
+        "STEP_10"
+      ]
+    },
+    {
       "key": "ami_eligibility",
       "field_id": "CX.AMI.ELIGIBILITY",
       "field_name": "AMI / Affordable Loan Eligibility",
@@ -1480,9 +1500,9 @@
       ]
     },
     {
-      "key": "doc_type",
-      "field_id": "CX.DOC.TYPE",
-      "field_name": "Doc Type (Wet / E-sign / Hybrid)",
+      "key": "doc_type_submission",
+      "field_id": "CX.DOCUMENTATIONTYPE",
+      "field_name": "Documentation Type (NON-QM Submission)",
       "category": "processor_workflow",
       "used_by_steps": [
         "STEP_10"
@@ -1495,15 +1515,6 @@
       "category": "grant_program",
       "used_by_steps": [
         "STEP_06"
-      ]
-    },
-    {
-      "key": "investor_type",
-      "field_id": "CX.INVESTOR.TYPE",
-      "field_name": "Investor Type (Conforming / Non-Del)",
-      "category": "processor_workflow",
-      "used_by_steps": [
-        "STEP_10"
       ]
     },
     {
@@ -1561,17 +1572,26 @@
       ]
     },
     {
-      "key": "signing_date",
-      "field_id": "CX.SIGNING.DATE",
-      "field_name": "Signing Date",
-      "category": "closing",
+      "key": "non_del_inv_approval",
+      "field_id": "CX.NONDEL.INV.APPROVAL",
+      "field_name": "Non-Del Inv. Approval",
+      "category": "processor_workflow",
+      "used_by_steps": [
+        "STEP_10"
+      ]
+    },
+    {
+      "key": "product_type",
+      "field_id": "CX.PRODUCTTYPE",
+      "field_name": "Product Type",
+      "category": "processor_workflow",
       "used_by_steps": [
         "STEP_10"
       ]
     },
     {
       "key": "wire_requested_date",
-      "field_id": "CX.WIRE.REQUESTED.DATE",
+      "field_id": "CX.WIREDATELO",
       "field_name": "Wire Requested Date",
       "category": "closing",
       "used_by_steps": [
@@ -2852,7 +2872,7 @@
     }
   ],
   "stats": {
-    "total_los_fields": 218,
+    "total_los_fields": 220,
     "total_doc_fields": 95,
     "total_document_types": 29,
     "total_steps": 10,

@@ -130,28 +130,26 @@ def _derive_loan_characteristics(state: dict) -> tuple[str, str, int]:
     los = state.get("los_fields", {})
     summary = state.get("loan_summary", {})
 
-    # loan_type
+    # loan_type — prefer loan_summary (post-build_loan_summary), fall back to los_fields
     loan_type = ""
     if summary and summary.get("derived", {}).get("loan_type"):
         loan_type = summary["derived"]["loan_type"]
-    elif los.get("preflight_mortgage_type", {}).get("value"):
-        loan_type = los["preflight_mortgage_type"]["value"]
+    elif los.get("loan_type", {}).get("value"):
+        loan_type = los["loan_type"]["value"]
 
     # loan_purpose
     loan_purpose = ""
     if summary and summary.get("derived", {}).get("loan_purpose"):
         loan_purpose = summary["derived"]["loan_purpose"]
-    elif los.get("preflight_loan_purpose", {}).get("value"):
-        loan_purpose = los["preflight_loan_purpose"]["value"]
+    elif los.get("loan_purpose", {}).get("value"):
+        loan_purpose = los["loan_purpose"]["value"]
 
-    # borrower_count
+    # borrower_count — use coborrower_first_name as a presence signal
     borrower_count = 1
     if summary and summary.get("derived", {}).get("has_coborrower"):
         borrower_count = 2
-    elif los.get("preflight_has_coborrower", {}).get("value"):
-        val = los["preflight_has_coborrower"]["value"]
-        if val and str(val).strip():
-            borrower_count = 2
+    elif los.get("coborrower_first_name", {}).get("value"):
+        borrower_count = 2
 
     return loan_type, loan_purpose, borrower_count
 
@@ -225,11 +223,12 @@ FIELD_MAP = {
     "CX.PROCESSOR.NAME": {"key": "processor_name", "field_name": "Processor Name", "category": "loan_info"},
     "CX.REALTOR.EMAIL": {"key": "realtor_email", "field_name": "Realtor Email", "category": "file_contacts"},
     "CX.REQUIRED.FIELDS.STATUS": {"key": "required_fields_status", "field_name": "Encompass Required Fields Status", "category": "submission"},
-    "CX.SIGNING.DATE": {"key": "signing_date", "field_name": "Signing Date", "category": "closing"},
+    "CUST50FV": {"key": "signing_date", "field_name": "Signing Date", "category": "closing"},
     "CX.TITLE.COMPANY.EMAIL": {"key": "title_company_email", "field_name": "Title Company Email", "category": "file_contacts"},
     "CX.TITLE.COMPANY.NAME": {"key": "title_company_name", "field_name": "Title Company Name", "category": "file_contacts"},
     "CX.VESTING.DESCRIPTION": {"key": "vesting_description", "field_name": "Vesting Description", "category": "title"},
-    "CX.WIRE.REQUESTED.DATE": {"key": "wire_requested_date", "field_name": "Wire Requested Date", "category": "closing"},
+    "CX.WIREDATELO": {"key": "wire_requested_date", "field_name": "Wire Requested Date", "category": "closing"},
+    "748": {"key": "closing_date", "field_name": "Closing Date", "category": "closing"},
 }
 
 ALL_FIELD_IDS = list(FIELD_MAP.keys())
