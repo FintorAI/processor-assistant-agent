@@ -1533,6 +1533,61 @@ def get_other_assets(
         raise
 
 
+def get_gifts_grants(
+    loan_id: str,
+    application_id: str = None,
+    state: dict = None,
+) -> list[dict[str, any]]:
+    """Get all gifts and grants for a loan application.
+
+    Uses Encompass v3 API:
+        GET /encompass/v3/loans/{loanId}/applications/{applicationId}/giftsGrants
+
+    Key fields in each record (confirmed from test loan 2604964148):
+        assetType           — "Grant", "GiftOfCash", "GiftOfEquity", etc.
+        source              — "FederalAgency", "Relative", "Employer", etc.
+        amount              — dollar amount (float)
+        owner               — "Borrower" | "CoBorrower" | "Both"
+        depositedIndicator  — True if already deposited into borrower account
+
+    Raises LookupError if the collection does not exist yet.
+    """
+    import requests
+
+    client = get_encompass_client(state=state)
+    if not application_id:
+        try:
+            apps = get_loan_applications(loan_id, state=state)
+            application_id = apps[0].get("id", "1") if apps else "1"
+        except Exception:
+            application_id = "1"
+
+    url = f"{client.api_base_url}/encompass/v3/loans/{loan_id}/applications/{application_id}/giftsGrants"
+    headers = {"accept": "application/json", "Authorization": f"Bearer {client.access_token}"}
+
+    try:
+        response = requests.get(url, headers=headers, timeout=30)
+        if response.status_code == 401:
+            client.refresh_token()
+            headers["Authorization"] = f"Bearer {client.access_token}"
+            response = requests.get(url, headers=headers, timeout=30)
+        if response.status_code == 404:
+            body_lc = (response.text or "").lower()
+            if any(kw in body_lc for kw in ("collection", "application", "does not exist", "not found")):
+                raise LookupError("giftsGrants collection does not exist — no rows created yet")
+            return []
+        if response.status_code != 200:
+            raise Exception(f"giftsGrants API error {response.status_code}: {response.text[:200]}")
+        records = response.json()
+        if not isinstance(records, list):
+            records = [records]
+        logger.info(f"[ENCOMPASS] get_gifts_grants: {len(records)} record(s) for loan {loan_id[:8]}")
+        return records
+    except requests.exceptions.RequestException as e:
+        logger.error(f"[ENCOMPASS] Network error getting giftsGrants: {e}")
+        raise
+
+
 def get_loan_applications(loan_id: str, state: dict = None) -> list[dict[str, any]]:
     """Get all applications (borrower pairs) for a loan.
 

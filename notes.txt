@@ -203,14 +203,14 @@ PROCESSOR FEEDBACK NOTES
                 - Considered as low-income borrower
                 - 2500, don’t have to do anything
                 - Gift of Cash
-                    - If Gift, send gift to borrower/ send details of gift
+                    - If Gift, send gift letter to borrower/ send details of gift for it to be signed by the borrower and the person that gifted it to them
             - 5. Declarations
                 - A. 2nd checkbox is No but should be Yes
                 - Because this borrower has been renting for 10 months, but owned  a property 3 years ago
                 - Primary, sole owner because no co-borrower
                 - If any are yes, then check
             - Ethnicity
-                - Validate with Driver’s License
+                - Validate with Drive3r’s License
             - Validate Attachment Type and Property Type with listing on Google
             - Estate will be held in Fee Simple
             - Manner in Which title will be held: Sole Ownership

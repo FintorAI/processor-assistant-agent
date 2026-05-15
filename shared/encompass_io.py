@@ -500,6 +500,55 @@ def read_other_assets(
     return records
 
 
+def read_gifts_grants(
+    loan_id: str,
+    application_id: str = None,
+    state: dict = None,
+) -> List[Dict[str, Any]]:
+    """Fetch and normalise all gifts and grants for a loan from the Encompass v3 API.
+
+    GET /encompass/v3/loans/{loanId}/applications/{applicationId}/giftsGrants
+
+    Each returned item shape (confirmed from test loan 2604964148)::
+
+        {
+          "id":                str,
+          "asset_type":        str,   # "Grant" | "GiftOfCash" | "GiftOfEquity" | ...
+          "source":            str,   # "FederalAgency" | "Relative" | "Employer" | ...
+          "amount":            float,
+          "owner":             str,   # "Borrower" | "CoBorrower" | "Both"
+          "deposited":         bool,  # True if already in borrower account
+        }
+
+    Returns empty list if collection does not exist (no rows yet).
+    """
+    try:
+        from encompass_client import get_gifts_grants
+    except ImportError:
+        logger.warning("encompass_client not available — read_gifts_grants will fail at runtime")
+        return []
+
+    try:
+        records = get_gifts_grants(loan_id, application_id=application_id, state=state)
+    except LookupError:
+        logger.info(f"[ENCOMPASS] read_gifts_grants: collection does not exist for loan {loan_id[:8]}")
+        return []
+
+    normalized = []
+    for r in records:
+        normalized.append({
+            "id":         r.get("id", ""),
+            "asset_type": r.get("assetType", ""),
+            "source":     r.get("source", ""),
+            "amount":     r.get("amount") or 0.0,
+            "owner":      r.get("owner", "Borrower"),
+            "deposited":  r.get("depositedIndicator", False),
+        })
+
+    logger.info(f"[ENCOMPASS] read_gifts_grants: {len(normalized)} record(s) for loan {loan_id[:8]}")
+    return normalized
+
+
 def read_vods(loan_id: str, state: dict = None) -> List[Dict[str, Any]]:
     """Fetch and normalise all VOD entries for a loan from the Encompass v3 API.
 
