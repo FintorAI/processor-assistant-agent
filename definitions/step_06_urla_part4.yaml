@@ -74,10 +74,25 @@ substeps:
     category: declarations
     purpose: Verify occupancy intent is correct (Y/N)
   - key: declaration_ownership_3yr
-    field_id: '1491'
-    field_name: Declaration - Owned Property in Last 3 Years
+    field_id: '403'
+    field_name: Declaration 5a(A) — Ownership Interest Past 3 Years
     category: declarations
-    purpose: Must reflect borrower's actual history
+    purpose: Must reflect borrower's actual history (field 1491 is invalid in batch API)
+  - key: prior_property_type
+    field_id: '981'
+    field_name: Declaration 5a(A)(1) — Type of Prior Property
+    category: declarations
+    purpose: PR/SR/SH/IP — required when 403=Yes; cross-check with loan occupancy
+  - key: prior_title_held
+    field_id: '1069'
+    field_name: Declaration 5a(A)(2) — How Title Was Held (Prior Property)
+    category: declarations
+    purpose: Sole/JointWithSpouse/JointWithOtherThanSpouse — flag joint if no co-borrower
+  - key: coborr_ownership_3yr
+    field_id: '1108'
+    field_name: Declaration 5a(A) — Co-Borrower Ownership Interest Past 3 Years
+    category: declarations
+    purpose: Check co-borrower ownership if co-borrower is present
   doc_types: []
   rules:
   - name: Declarations Consistent with File

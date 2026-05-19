@@ -284,8 +284,12 @@ FIELD_MAP = {
     # ── Closing ──
     "763": {"key": "est_closing_date", "field_name": "Est Closing Date", "category": "closing"},
     # ── Declarations ──
-    "418": {"key": "declaration_primary_residence", "field_name": "Declaration - Primary Residence Intent", "category": "declarations"},
-    "1491": {"key": "declaration_ownership_3yr", "field_name": "Declaration - Owned Property in Last 3 Years", "category": "declarations"},
+    "418": {"key": "declaration_primary_residence", "field_name": "Declaration 5a — Will Occupy as Primary Residence", "category": "declarations"},
+    "403": {"key": "declaration_ownership_3yr", "field_name": "Declaration 5a(A) — Ownership Interest Past 3 Years", "category": "declarations"},
+    "981": {"key": "prior_property_type", "field_name": "Declaration 5a(A)(1) — Type of Prior Property", "category": "declarations"},
+    "1069": {"key": "prior_title_held", "field_name": "Declaration 5a(A)(2) — How Title Was Held (Prior Property)", "category": "declarations"},
+    "1108": {"key": "coborr_ownership_3yr", "field_name": "Declaration 5a(A) — Co-Borrower Ownership Interest Past 3 Years", "category": "declarations"},
+    # Note: field 1491 is invalid in the Encompass batch API — removed 2026-05-19
     "218": {"key": "rental_income", "field_name": "Rental Income", "category": "income"},
     # ── Step 01 — File Contacts ──
     "638": {"key": "seller_1_name", "field_name": "Seller 1 Name", "category": "file_contacts"},
@@ -392,7 +396,9 @@ FIELD_MAP = {
     "BE0351": {"key": "be03_date_hired", "field_name": "Employment 3 — Date Hired", "category": "employment"},
     # ── Step 08 — Borrower Vesting ──
     "479": {"key": "marital_status", "field_name": "Borrower Marital Status (Vesting)", "category": "vesting"},
-    "1069": {"key": "borrower_sex", "field_name": "Borrower Sex", "category": "borrower_info"},
+    "471": {"key": "borrower_sex", "field_name": "Borrower Sex (Male/Female)", "category": "borrower_info"},
+    "478": {"key": "coborrower_sex", "field_name": "Co-Borrower Sex (Male/Female)", "category": "borrower_info"},
+    "1069": {"key": "prior_title_held", "field_name": "Declaration — How Title Was Held (Prior Property)", "category": "declarations"},
     "1867": {"key": "final_vesting", "field_name": "Final Vesting", "category": "vesting"},
     "1868": {"key": "borrower_vesting_name", "field_name": "Borrower Vesting Name", "category": "vesting"},
     "1871": {"key": "borrower_vesting_type", "field_name": "Borrower Vesting Type", "category": "vesting"},

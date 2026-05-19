@@ -211,6 +211,7 @@ PROCESSOR FEEDBACK NOTES
                 - If any are yes, then check
             - Ethnicity
                 - Validate with Drive3r’s License
+    - 1003 URLA Lender
             - Validate Attachment Type and Property Type with listing on Google
             - Estate will be held in Fee Simple
             - Manner in Which title will be held: Sole Ownership

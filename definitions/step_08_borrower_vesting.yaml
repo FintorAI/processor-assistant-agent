@@ -64,7 +64,7 @@ substeps:
     category: borrower_info
     purpose: Write to vesting entity
   - key: borrower_sex
-    field_id: '1069'
+    field_id: '471'
     field_name: Borrower Sex
     category: borrower_info
     purpose: Determines Man/Woman in unmarried vesting suffix

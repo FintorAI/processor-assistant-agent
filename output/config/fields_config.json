@@ -31,12 +31,12 @@
       ]
     },
     {
-      "key": "borrower_sex",
+      "key": "prior_title_held",
       "field_id": "1069",
-      "field_name": "Borrower Sex",
-      "category": "borrower_info",
+      "field_name": "Declaration 5a(A)(2) \u2014 How Title Was Held (Prior Property)",
+      "category": "declarations",
       "used_by_steps": [
-        "STEP_08"
+        "STEP_06"
       ]
     },
     {
@@ -47,6 +47,15 @@
       "used_by_steps": [
         "STEP_02",
         "STEP_03"
+      ]
+    },
+    {
+      "key": "coborr_ownership_3yr",
+      "field_id": "1108",
+      "field_name": "Declaration 5a(A) \u2014 Co-Borrower Ownership Interest Past 3 Years",
+      "category": "declarations",
+      "used_by_steps": [
+        "STEP_06"
       ]
     },
     {
@@ -235,15 +244,6 @@
       "category": "borrower_info",
       "used_by_steps": [
         "STEP_02"
-      ]
-    },
-    {
-      "key": "declaration_ownership_3yr",
-      "field_id": "1491",
-      "field_name": "Declaration - Owned Property in Last 3 Years",
-      "category": "declarations",
-      "used_by_steps": [
-        "STEP_06"
       ]
     },
     {
@@ -685,6 +685,15 @@
       ]
     },
     {
+      "key": "declaration_ownership_3yr",
+      "field_id": "403",
+      "field_name": "Declaration 5a(A) \u2014 Ownership Interest Past 3 Years",
+      "category": "declarations",
+      "used_by_steps": [
+        "STEP_06"
+      ]
+    },
+    {
       "key": "borrower_est_closing_date",
       "field_id": "4114",
       "field_name": "Borrower Est Closing Date",
@@ -718,6 +727,15 @@
       "category": "loan_info",
       "used_by_steps": [
         "STEP_02"
+      ]
+    },
+    {
+      "key": "borrower_sex",
+      "field_id": "471",
+      "field_name": "Borrower Sex",
+      "category": "borrower_info",
+      "used_by_steps": [
+        "STEP_08"
       ]
     },
     {
@@ -975,6 +993,15 @@
       "category": "borrower_info",
       "used_by_steps": [
         "STEP_02"
+      ]
+    },
+    {
+      "key": "prior_property_type",
+      "field_id": "981",
+      "field_name": "Declaration 5a(A)(1) \u2014 Type of Prior Property",
+      "category": "declarations",
+      "used_by_steps": [
+        "STEP_06"
       ]
     },
     {
@@ -2837,7 +2864,7 @@
     }
   ],
   "stats": {
-    "total_los_fields": 218,
+    "total_los_fields": 221,
     "total_doc_fields": 93,
     "total_document_types": 29,
     "total_steps": 10,
